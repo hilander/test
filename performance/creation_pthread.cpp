@@ -6,9 +6,9 @@
 #include <sched.h>
 #include <pthread.h>
 
-#ifndef PTHREAD_STACK_MIN
-#define PTHREAD_STACK_MIN 16384
-#endif
+// PTHREAD_STACK_MIN definition:
+#include <limits.h>
+
 const int thread_count = 1000;
 using namespace std;
 
