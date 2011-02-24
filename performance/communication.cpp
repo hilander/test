@@ -22,6 +22,7 @@ void* t1(void* p)
     cout << ":" ; cout.flush();
   }
   rp->write_in( 0 ); // always after write! Maybe another (fake) method needed, e.g. confirm() ?
+  sleep(1);
   cout << "t1: OK." << endl;
   return 0;
 }
@@ -40,7 +41,7 @@ void* t2(void* p)
     }
     while ( ! b )
       ;
-  rp->write_in( 0 );
+  //rp->write_in( 0 );
   cout << "!" ; cout.flush();
   }
   cout << "t2: OK." << endl;
