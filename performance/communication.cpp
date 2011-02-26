@@ -10,7 +10,10 @@ void* t1(void* p)
 {
   raw_pipe* rp = static_cast< raw_pipe* >( p );
   spawned_data sd = { END, 0 };
-  for ( int i = 0; i < 10; i++ )
+  int i;
+
+  //write... 
+  for ( i = 0; i < 10; i++ )
   {
     bool b = false;
     do
@@ -19,11 +22,19 @@ void* t1(void* p)
     }
     while ( ! b )
       ;
-    cout << ":" ; cout.flush();
   }
-  rp->write_in( 0 ); // always after write! Maybe another (fake) method needed, e.g. confirm() ?
-  sleep(1);
-  cout << "t1: OK." << endl;
+
+  //read... 
+  for ( i = 0; i < 10; i++ )
+  {
+    bool b = false;
+    do
+    {
+      b = rp->read_out( &sd );
+    }
+    while ( ! b )
+      ;
+  }
   return 0;
 }
 
@@ -32,7 +43,9 @@ void* t2(void* p)
 {
   raw_pipe* rp = static_cast< raw_pipe* >( p );
   spawned_data sd;
-  for ( int i = 0; i < 10; i++ )
+  int i;
+
+  for ( i = 0; i < 10; i++ )
   {
     bool b = false;
     do
@@ -41,10 +54,20 @@ void* t2(void* p)
     }
     while ( ! b )
       ;
-  //rp->write_in( 0 );
-  cout << "!" ; cout.flush();
   }
-  cout << "t2: OK." << endl;
+
+  spawned_data sdd = { SPAWN, 0 };
+  for ( i = 0; i < 10; i++ )
+  {
+    bool b = false;
+    do
+    {
+      b = rp->write_out( &sdd );
+    }
+    while ( ! b )
+      ;
+  }
+  //cout << "t2: OK." << endl;
   return 0;
 }
 
@@ -63,7 +86,7 @@ int main(int,char**)
   {
     //pthread_join( threads[0], 0 );
     pthread_join( threads[1], 0 );
-    cout << "................" << endl;
+    cout << "Communication Test finished (OK, I hope...)." << endl;
   }
   else
   {
