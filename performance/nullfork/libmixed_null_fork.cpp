@@ -27,14 +27,16 @@ class forked : public fiber::fiber
 
 int main(int,char**)
 {
-	int thread_count = 10000;
+	int thread_count = 1000;
 	scheduler::ueber_scheduler us;
 	us.init();
+  /*
 	std::cout 
 		<< "Thread count: " << thread_count
 		<< std::endl
 		<< "Init: OK."
 		<< std::endl;
+  */
 
 	forked fs[thread_count];
 	int i;
@@ -42,9 +44,13 @@ int main(int,char**)
 	{
 	us.spawn(&fs[i]);
 	}
+  /*
 	std::cout << "Spawn: OK." << std::endl;
+  */
 
 	us.join_u_sch();
+  /*
 	std::cout << "End: OK." << std::endl;
+  */
 	return 0;
 }
