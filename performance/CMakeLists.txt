@@ -5,6 +5,7 @@ target_link_libraries ( communication pthread )
 target_link_libraries ( communication libmixed )
 set ( SUBDIRECTORIES  
       nullfork
+			yield
     )
 
 foreach ( DIR ${SUBDIRECTORIES} )
