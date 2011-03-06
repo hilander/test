@@ -29,7 +29,7 @@ int main(int,char**)
 	int i;
 	for (i=0; i<thread_count; i++)
 	{
-	us.spawn(&fs[i]);
+		us.spawn(&fs[i]);
 	}
 
 	us.join_u_sch();

@@ -9,7 +9,7 @@
 // PTHREAD_STACK_MIN definition:
 #include <limits.h>
 
-const int thread_count = 6000;
+const int thread_count = 1000;
 using namespace std;
 
 void* run (void* x)
