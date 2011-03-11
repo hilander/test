@@ -61,8 +61,10 @@ class second_fiber : public fiber::fiber
     public:
     virtual void go()
     {
-        spawned_data* packet = new spawned_data();
-        spawned_data* packet2;
+        std::tr1::shared_ptr< spawned_data > packet2 = std::tr1::shared_ptr< spawned_data >( new spawned_data() );
+        spawned_data* packet = packet2.get();
+
+        std::cout << "second_fiber: start." << std::endl;
 
         while ( ! receive( packet ) )
         {
@@ -97,7 +99,7 @@ class second_fiber : public fiber::fiber
     fiber::fiber::ptr receiver;
 };
 
-int main(int,char**)
+void communicate_using_two_schedulers()
 {
     ueber_scheduler us;
 
@@ -112,7 +114,7 @@ int main(int,char**)
     l1.push_back( &ff );
     l2.push_back( &sf );
 
-    std::cout << "fibers OK" << std::endl;
+    //std::cout << "fibers OK" << std::endl;
 
     userspace_scheduler u1( &us, l1 ), u2( &us, l2 );
     
@@ -124,11 +126,52 @@ int main(int,char**)
     ul->push_back( &u1 );
     ul->push_back( &u2 );
 
-    std::cout << "userspace_scheduler OK" << std::endl;
+    //std::cout << "userspace_scheduler OK" << std::endl;
 
     us.init( ul );
 
 	us.join_u_sch();
+
+}
+
+void communicate_using_one_scheduler()
+{
+    ueber_scheduler us;
+
+    first_fiber ff;
+    second_fiber sf;
+
+    ff.set_receiver( &sf );
+    sf.set_receiver( &ff );
+
+    std::list< fiber::fiber::ptr > l;
+
+    l.push_back( &ff );
+    l.push_back( &sf );
+
+    userspace_scheduler u( &us, l );
+    
+    ff.set_supervisor( &u );
+    sf.set_supervisor( &u );
+
+    std::list< userspace_scheduler* >* ul = new std::list< userspace_scheduler* >();
+
+    ul->push_back( &u );
+
+
+    us.init( ul );
+
+	us.join_u_sch();
+
+    delete ul;
+    //std::cout << "userspace_scheduler OK" << std::endl;
+}
+
+int main(int,char**)
+{
+    //communicate_using_one_scheduler();
+
+    communicate_using_two_schedulers();
 
     std::cout << "OK" << std::endl;
     return 0;
