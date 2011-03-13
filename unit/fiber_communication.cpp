@@ -27,16 +27,19 @@ class first_fiber : public fiber::fiber
         packet->sender = this;
         packet->receiver = receiver;
 
-        std::cout << "first_fiber: packet prepared." << std::endl;
+        //std::cout << "first_fiber: packet prepared." << std::endl;
 
-        if ( send( packet ) )
+        while ( ! send( packet ) )
         {
-          std::cout << "first_fiber: packet sent." << std::endl;
+          yield();
         }
+				std::cout << "first_fiber: packet sent." << std::endl;
+				/*
         else
         {
           std::cout << "first_fiber: packet _NOT_ sent." << std::endl;
         }
+				*/
 
         while ( ! receive( packet ) )
         {
@@ -64,28 +67,31 @@ class second_fiber : public fiber::fiber
         std::tr1::shared_ptr< spawned_data > packet2 = std::tr1::shared_ptr< spawned_data >( new spawned_data() );
         spawned_data* packet = packet2.get();
 
-        std::cout << "second_fiber: start." << std::endl;
+        //std::cout << "second_fiber: start." << std::endl;
 
         while ( ! receive( packet ) )
         {
           yield();
         }
 
-        std::cout << "second_fiber: packet received." << std::endl;
+        //std::cout << "second_fiber: packet received." << std::endl;
 
         packet->d = FIBER_SPECIFIC;
         packet->p = 0;
         packet->sender = this;
         packet->receiver = receiver;
 
-        if ( send( packet ) )
+        while ( ! send( packet ) )
         {
-          std::cout << "second_fiber: packet sent." << std::endl;
+          yield();
         }
+          std::cout << "second_fiber: packet sent." << std::endl;
+					/*
         else
         {
           std::cout << "second_fiber: packet _NOT_ sent." << std::endl;
         }
+				*/
 
         std::cout << "second_fiber: All done OK." << std::endl;
     }
@@ -132,6 +138,7 @@ void communicate_using_two_schedulers()
 
 	us.join_u_sch();
 
+	std::cout << "Test for two schedulers OK" << std::endl;
 }
 
 void communicate_using_one_scheduler()
@@ -164,12 +171,13 @@ void communicate_using_one_scheduler()
 	us.join_u_sch();
 
     delete ul;
-    //std::cout << "userspace_scheduler OK" << std::endl;
+    std::cout << "Test for one scheduler OK" << std::endl;
 }
 
 int main(int,char**)
 {
     //communicate_using_one_scheduler();
+    //std::cout << "OK" << std::endl;
 
     communicate_using_two_schedulers();
 
