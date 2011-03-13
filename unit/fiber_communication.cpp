@@ -33,7 +33,7 @@ class first_fiber : public fiber::fiber
         {
           yield();
         }
-				std::cout << "first_fiber: packet sent." << std::endl;
+				//std::cout << "first_fiber: packet sent." << std::endl;
 				/*
         else
         {
@@ -47,7 +47,7 @@ class first_fiber : public fiber::fiber
           yield();
         }
 
-        std::cout << "first_fiber end;" << std::endl;
+        //std::cout << "first_fiber end;" << std::endl;
     }
 
     void set_receiver( fiber::fiber::ptr receiver_ )
@@ -85,7 +85,7 @@ class second_fiber : public fiber::fiber
         {
           yield();
         }
-          std::cout << "second_fiber: packet sent." << std::endl;
+          //std::cout << "second_fiber: packet sent." << std::endl;
 					/*
         else
         {
@@ -93,7 +93,7 @@ class second_fiber : public fiber::fiber
         }
 				*/
 
-        std::cout << "second_fiber: All done OK." << std::endl;
+        //std::cout << "second_fiber: All done OK." << std::endl;
     }
 
     void set_receiver( fiber::fiber::ptr receiver_ )
@@ -138,7 +138,7 @@ void communicate_using_two_schedulers()
 
 	us.join_u_sch();
 
-	std::cout << "Test for two schedulers OK" << std::endl;
+	//std::cout << "Test for two schedulers OK" << std::endl;
 }
 
 void communicate_using_one_scheduler()
@@ -170,17 +170,17 @@ void communicate_using_one_scheduler()
 
 	us.join_u_sch();
 
-    delete ul;
-    std::cout << "Test for one scheduler OK" << std::endl;
+    //delete ul;
+    //std::cout << "Test for one scheduler OK" << std::endl;
 }
 
 int main(int,char**)
 {
-    //communicate_using_one_scheduler();
+    communicate_using_one_scheduler();
     //std::cout << "OK" << std::endl;
 
     communicate_using_two_schedulers();
 
-    std::cout << "OK" << std::endl;
+    //std::cout << "OK" << std::endl;
     return 0;
 }
