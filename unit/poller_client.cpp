@@ -9,6 +9,8 @@
 #include <pthread.h>
 #include <memory>
 #include <vector>
+#include <unistd.h>
+#include <fcntl.h>
 
 using std::string;
 using std::auto_ptr;
@@ -98,6 +100,9 @@ int main(int,char**)
 	sar.sin_port = htons( default_port );
 
 	int sa = socket( AF_INET, SOCK_STREAM, 0 );
+  int orig_flags = fcntl( sa, F_GETFD );
+  fcntl( sa, F_SETFD, orig_flags | O_NONBLOCK );
+  
 	int sw = connect( sa, (sockaddr*)&sar, sizeof(sockaddr_in) );
 
   // 2. add its fd to poller
@@ -131,10 +136,10 @@ int main(int,char**)
       if ( (*pv)[0].data.fd == sa  && (*pv)[0].events & EPOLLOUT )
       {
         char* buf = "OK";
-        if ( write( sa, buf, 3 ) > 0 )
+        while ( write( sa, buf, 3 ) != 3 )
         {
-          std::cout << "poller_client: socket correct, event EPOLLOUT, written: " << buf << std::endl;
         }
+        std::cout << "poller_client: socket correct, event EPOLLOUT, written: " << buf << std::endl;
       }
     }
   }
