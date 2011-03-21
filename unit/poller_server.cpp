@@ -100,16 +100,39 @@ int main(int,char**)
 	int orig_flags = fcntl( sa, F_GETFL );
 	fcntl( sa, F_SETFL, orig_flags | O_NONBLOCK );
 
-	bind( sa, (sockaddr*)&sar, sizeof(sockaddr_in) );
-	listen( sa, 10 );
+	;
+  if ( bind( sa, (sockaddr*)&sar, sizeof(sockaddr_in) ) != 0 )
+  {
+    string error_name;
+    s_err( errno, error_name );
+    std::cout << "poller_server: bind() error: " << error_name << std::endl;
+    return 1;
+  }
+
+	if ( listen( sa, 10 ) != 0 )
+  {
+    string error_name;
+    s_err( errno, error_name );
+    std::cout << "poller_server: bind() error: " << error_name << std::endl;
+    return 1;
+  }
 
 	int sw = 0;
 	sockaddr_in peer_addr;
-	socklen_t peer_len = (socklen_t) sizeof(peer_addr);
-	while ( sw == 0 )
+	socklen_t peer_len = (socklen_t) sizeof(sockaddr_in);
+	do
 	{
 		sw = accept( sa, (sockaddr*) &peer_addr, &peer_len );
 	}
+	while ( sw <= 0  && errno == EAGAIN )
+		;
+  if ( sw == 0 )
+  {
+    string error_name;
+    s_err( errno, error_name );
+    std::cout << "poller_server: accept() error: " << error_name << std::endl;
+    return 1;
+  }
 
 	p->add( sw );
   bool not_read = true;
@@ -119,15 +142,15 @@ int main(int,char**)
     if ( pv.get() != 0 )
     {
       std::cout << "poller_server: something on socket occured" << std::endl;
-      not_read = false;
 
-      if ( (*pv)[0].data.fd == sa  && (*pv)[0].events & EPOLLIN )
+      if ( (*pv)[0].data.fd == sw && (*pv)[0].events & EPOLLIN )
       {
-        char* buf = "OK";
-        while ( read( sa, buf, 3 ) != 3 )
+        char buf[3];
+        while ( read( sw, buf, 3 ) == 0 )
         {
         }
-        std::cout << "poller_server: socket correct, event EPOLLOUT, written: " << buf << std::endl;
+        std::cout << "poller_server: socket correct, event EPOLLOUT, read: " << buf << std::endl;
+        not_read = false;
       }
     }
   }
