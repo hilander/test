@@ -85,7 +85,7 @@ void s_err( int num, string& s )
 
 const int default_port = 8100;
 
-int main(int,char**)
+int main(int argc ,char* argv[])
 {
   ::pthread_mutex_t m;
   using scheduler::poller;
@@ -96,21 +96,34 @@ int main(int,char**)
   // 1. create client socket
 	sockaddr_in sar;
 	sar.sin_family = AF_INET;
-	inet_pton( AF_INET, "127.0.0.1", &sar.sin_addr );
+	if ( argc == 2 )
+	{
+		inet_pton( AF_INET, argv[1], &sar.sin_addr );
+	}
+	else
+	{
+		inet_pton( AF_INET, "127.0.0.1", &sar.sin_addr );
+	}
 	sar.sin_port = htons( default_port );
 
 	int sa = socket( AF_INET, SOCK_STREAM, 0 );
-  int orig_flags = fcntl( sa, F_GETFD );
-  fcntl( sa, F_SETFD, orig_flags | O_NONBLOCK );
+  int orig_flags = fcntl( sa, F_GETFL );
+  fcntl( sa, F_SETFL, orig_flags | O_NONBLOCK );
   
-	int sw = connect( sa, (sockaddr*)&sar, sizeof(sockaddr_in) );
+	int sw = 0;
+	do
+	{
+		sw = connect( sa, (sockaddr*)&sar, sizeof(sockaddr_in) );
+	}
+	while ( sw != 0 && ( errno == EINPROGRESS || errno == EALREADY ) )
+		;
 
   // 2. add its fd to poller
   if ( sw != 0 )
   {
     string error_name;
     s_err( errno, error_name );
-    std::cout << "Error: " << error_name << std::endl;
+    std::cout << "poller_client: connect() error: " << error_name << std::endl;
     return 1;
   }
   else
@@ -119,7 +132,7 @@ int main(int,char**)
     {
       string error_name;
       s_err( errno, error_name );
-      std::cout << "Error: " << error_name << std::endl;
+      std::cout << "poller_client: poller.add() error: " << error_name << std::endl;
     }
   }
 
@@ -128,7 +141,7 @@ int main(int,char**)
   do
   {
     auto_ptr< vector < ::epoll_event > > pv( p->poll() );
-    if ( pv->size() > 0 )
+    if ( pv.get() != 0 )
     {
       std::cout << "poller_client: something on socket occured" << std::endl;
       not_read = false;
