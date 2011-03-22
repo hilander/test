@@ -156,6 +156,11 @@ int main(int,char**)
   }
   while( not_read )
     ;
+
+  p->remove( sw );
+  p->remove( sa );
+  close( sw );
+  close( sa );
   cout << "poller_server: finished" << endl;
   return 0;
 }
