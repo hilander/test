@@ -21,11 +21,11 @@ class first_fiber : public fiber::fiber
         fiber_data fd;
         fd.contents = 42;
 
-        spawned_data* packet = new spawned_data();
-        packet->d = FIBER_SPECIFIC;
-        packet->p = &fd;
-        packet->sender = this;
-        packet->receiver = receiver;
+        spawned_data packet;
+        packet.d = FIBER_SPECIFIC;
+        packet.p = &fd;
+        packet.sender = this;
+        packet.receiver = receiver;
 
         //std::cout << "first_fiber: packet prepared." << std::endl;
 
@@ -64,8 +64,8 @@ class second_fiber : public fiber::fiber
     public:
     virtual void go()
     {
-        std::tr1::shared_ptr< spawned_data > packet2 = std::tr1::shared_ptr< spawned_data >( new spawned_data() );
-        spawned_data* packet = packet2.get();
+        //std::tr1::shared_ptr< spawned_data > packet2 = std::tr1::shared_ptr< spawned_data >( new spawned_data() );
+        spawned_data packet;
 
         //std::cout << "second_fiber: start." << std::endl;
 
@@ -76,10 +76,10 @@ class second_fiber : public fiber::fiber
 
         //std::cout << "second_fiber: packet received." << std::endl;
 
-        packet->d = FIBER_SPECIFIC;
-        packet->p = 0;
-        packet->sender = this;
-        packet->receiver = receiver;
+        packet.d = FIBER_SPECIFIC;
+        packet.p = 0;
+        packet.sender = this;
+        packet.receiver = receiver;
 
         while ( ! send( packet ) )
         {

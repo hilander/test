@@ -18,7 +18,7 @@ void* t1(void* p)
     bool b = false;
     do
     {
-      b = rp->write_in( &sd );
+      b = rp->write_in( sd );
     }
     while ( ! b )
       ;
@@ -30,7 +30,7 @@ void* t1(void* p)
     bool b = false;
     do
     {
-      b = rp->read_out( &sd );
+      b = rp->read_out( sd );
     }
     while ( ! b )
       ;
@@ -50,7 +50,7 @@ void* t2(void* p)
     bool b = false;
     do
     {
-      b = rp->read_in( &sd );
+      b = rp->read_in( sd );
     }
     while ( ! b )
       ;
@@ -62,7 +62,7 @@ void* t2(void* p)
     bool b = false;
     do
     {
-      b = rp->write_out( &sdd );
+      b = rp->write_out( sdd );
     }
     while ( ! b )
       ;
