@@ -12,10 +12,13 @@
 #include <fcntl.h>
 
 #include <fiber.hpp>
+#include <scheduler.hpp>
 
 using std::string;
 using std::auto_ptr;
 using std::vector;
+
+const int default_port = 8100;
 
 void s_err( int num, string& s )
 {
@@ -86,17 +89,55 @@ void s_err( int num, string& s )
 
 class f_client : public fiber::fiber
 {
+  public:
+    f_client( char* address_c_str )
+      : _addr( address_c_str )
+    {}
+
     virtual void go()
     {
+      ::pthread_mutex_t m;
+      //using scheduler::poller;
+      // 0. create poller object
+      //poller::ptr p( poller::get( &m ) );
 
+      // 1. create client socket
+      sockaddr_in sar;
+      sar.sin_family = AF_INET;
+      inet_pton( AF_INET, _addr, &sar.sin_addr );
+      sar.sin_port = htons( default_port );
+
+      int sa = socket( AF_INET, SOCK_STREAM, 0 );
+      int orig_flags = fcntl( sa, F_GETFL );
+      fcntl( sa, F_SETFL, orig_flags | O_NONBLOCK );
+
+      int sw = 0;
+      do
+      {
+        sw = connect( sa );
+      }
+      while ( sw != 0 && ( errno == EINPROGRESS || errno == EALREADY ) )
+        ;
+
+      do_close( sw );
+      std::cout << "poller_client: End." << std::endl;
     }
-};
 
-const int default_port = 8100;
+  private:
+    char* _addr;
+};
 
 int main(int argc ,char* argv[])
 {
-    f_client fcl;
+  signal( SIGPIPE, SIG_IGN );
+  char loopback[] = "127.0.0.1";
+	scheduler::ueber_scheduler us;
+	us.init();
+
+  f_client fcl = f_client( ( argc == 2 ) ? argv[1] : loopback );
+  us.spawn( &fcl );
+  us.join_u_sch();
+
   /*
   ::pthread_mutex_t m;
   using scheduler::poller;
