@@ -112,9 +112,12 @@ class f_client : public fiber::fiber
       fcntl( sa, F_SETFL, orig_flags | O_NONBLOCK );
 
       int sw = 0;
+      sockaddr_in sa_in;
+      sockaddr* ss = (sockaddr*)&sa_in;
       do
       {
-        sw = connect( sa );
+      std::cout << "poller_client: End." << std::endl;
+        sw = this->connect( sa, *ss );
       }
       while ( sw != 0 && ( errno == EINPROGRESS || errno == EALREADY ) )
         ;
