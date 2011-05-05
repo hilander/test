@@ -13,6 +13,11 @@ add_executable ( fiber_client fiber_client.cpp )
 target_link_libraries ( fiber_client pthread )
 target_link_libraries ( fiber_client libmixed )
 
+add_executable ( fiber_server fiber_server.cpp )
+
+target_link_libraries ( fiber_server pthread )
+target_link_libraries ( fiber_server libmixed )
+
 add_executable ( poller_client poller_client.cpp )
 
 target_link_libraries ( poller_client pthread )

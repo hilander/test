@@ -13,6 +13,7 @@
 
 #include <fiber.hpp>
 #include <scheduler.hpp>
+#include <scheduler_tools.hpp>
 
 using std::string;
 using std::auto_ptr;
@@ -96,7 +97,6 @@ class f_client : public fiber::fiber
 
     virtual void go()
     {
-      ::pthread_mutex_t m;
       //using scheduler::poller;
       // 0. create poller object
       //poller::ptr p( poller::get( &m ) );
@@ -111,19 +111,51 @@ class f_client : public fiber::fiber
       int orig_flags = fcntl( sa, F_GETFL );
       fcntl( sa, F_SETFL, orig_flags | O_NONBLOCK );
 
-      int sw = 0;
+      bool sw = 0;
       sockaddr_in sa_in;
-      sockaddr* ss = (sockaddr*)&sa_in;
+      scheduler::accept_connect_data d;
+      d.fd = sa;
+      d.saddr = (const ::sockaddr&)sa_in;
+      
+      //sockaddr* ss = (sockaddr*)&sa_in;
+      
+      //_supervisor->init_client( sa );
       do
       {
-      std::cout << "poller_client: End." << std::endl;
-        sw = this->connect( sa, *ss );
+        //sw = this->connect( sa, d );
+        sw = ::connect( sa, (const sockaddr*)&sar, sizeof(sar) );
       }
       while ( sw != 0 && ( errno == EINPROGRESS || errno == EALREADY ) )
         ;
 
-      do_close( sw );
-      std::cout << "poller_client: End." << std::endl;
+      if ( sw != 0 )
+      {
+        string error_name;
+        s_err( errno, error_name );
+        std::cout << "poller_client: connect() error: " << error_name << std::endl;
+        return;
+      }
+      else
+      {
+        _supervisor->init_client( sa );
+      }
+
+      std::vector< char > buf(3);
+      buf.push_back('O');
+      buf.push_back('K');
+      buf.push_back('\0');
+      ssize_t written_bytes = 3;
+
+      std::cout << "fiber_client: write..." << std::endl;
+      while ( ! this->write( buf, written_bytes, sa ) )
+      {
+      }
+      if ( written_bytes == 3 )
+      {
+        std::cout << "fiber_client: write ok" << std::endl;
+      }
+      //std::cout << "fiber_client: connect " << ( sa ? "ok." : "fail." ) << std::endl;
+      do_close( sa );
     }
 
   private:

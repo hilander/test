@@ -1,5 +1,4 @@
 #include <iostream>
-#include <poller.hpp>
 
 #include <signal.h>
 #include <sys/socket.h>
@@ -11,10 +10,16 @@
 #include <vector>
 #include <unistd.h>
 #include <fcntl.h>
+#include <netdb.h>
+
+#include <fiber.hpp>
+#include <scheduler.hpp>
 
 using std::string;
 using std::auto_ptr;
 using std::vector;
+
+const int default_port = 8100;
 
 void s_err( int num, string& s )
 {
@@ -83,13 +88,88 @@ void s_err( int num, string& s )
 	}
 }
 
-const int default_port = 8100;
+class f_server : public fiber::fiber
+{
+  public:
+    f_server( char* address_c_str )
+      : _addr( address_c_str )
+    {}
+
+    virtual void go()
+    {
+      //::pthread_mutex_t m;
+      //using scheduler::poller;
+      // 0. create poller object
+      //poller::ptr p( poller::get( &m ) );
+
+      // 1. create client socket
+
+      protoent *pe = getprotobyname( "tcp" );
+
+      sockaddr_in sar;
+      sar.sin_family = AF_INET;
+      sar.sin_addr.s_addr = INADDR_ANY;
+      //inet_pton( AF_INET, _addr, &sar.sin_addr );
+      sar.sin_port = htons( default_port );
+
+      int sa = socket( AF_INET, SOCK_STREAM, pe->p_proto );
+      int orig_flags = fcntl( sa, F_GETFL );
+      fcntl( sa, F_SETFL, orig_flags | O_NONBLOCK );
+
+      if ( bind( sa, (sockaddr*)&sar, sizeof(sockaddr_in) ) != 0 )
+      {
+        string error_name;
+        s_err( errno, error_name );
+        std::cout << "poller_server: bind() error: " << error_name << std::endl;
+        return;
+      }
+
+      if ( listen( sa, 10 ) != 0 )
+      {
+        string error_name;
+        s_err( errno, error_name );
+        std::cout << "poller_server: bind() error: " << error_name << std::endl;
+        return;
+      }
+      bool sw;
+      sockaddr_in sa_in;
+      sockaddr* ss = (sockaddr*)&sa_in;
+      scheduler::accept_connect_data d;
+      d.fd = sa;
+      d.saddr = (const ::sockaddr&)sa_in;
+      do
+      {
+        sw = this->accept( sa, d );
+      }
+      while ( !sw  )
+        ;
+      _supervisor->init_server( sw );
+
+      std::cout << "fiber_server: accept " << ( sw ? "ok." : "fail." ) << std::endl;
+      //do_close( sa );
+      do_close( sw );
+    }
+
+  private:
+    char* _addr;
+};
 
 int main(int argc ,char* argv[])
 {
+  signal( SIGPIPE, SIG_IGN );
+  char loopback[] = "127.0.0.1";
+	scheduler::ueber_scheduler us;
+	us.init();
+
+  f_server fcl = f_server( ( argc == 2 ) ? argv[1] : loopback );
+  us.spawn( &fcl );
+  us.join_u_sch();
+
+  /*
+  ::pthread_mutex_t m;
   using scheduler::poller;
   // 0. create poller object
-  poller::ptr p( poller::get() );
+  poller::ptr p( poller::get( &m ) );
   signal( SIGPIPE, SIG_IGN );
 
   // 1. create client socket
@@ -163,5 +243,6 @@ int main(int argc ,char* argv[])
   p->remove( sa );
   close ( sa );
   std::cout << "poller_client: End." << std::endl;
+  */
   return 0;
 }

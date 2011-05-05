@@ -85,9 +85,9 @@ void s_err( int num, string& s )
 
 int main(int,char**)
 {
-  shared_ptr< poller > p( poller::get( new ::pthread_mutex_t() ) );
+  shared_ptr< poller > p( poller::get() );
 
-	protoent *pe = getprotobyname( "tcp" );
+	::protoent *pe = getprotobyname( "tcp" );
 
 	sockaddr_in sar;
 	sar.sin_family = AF_INET;
@@ -141,7 +141,7 @@ int main(int,char**)
     auto_ptr< vector < ::epoll_event > > pv( p->poll() );
     if ( pv.get() != 0 )
     {
-      std::cout << "poller_server: something on socket occured" << std::endl;
+      //std::cout << "poller_server: something on socket occured" << std::endl;
 
       if ( (*pv)[0].data.fd == sw && (*pv)[0].events & EPOLLIN )
       {
