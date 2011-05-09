@@ -153,6 +153,7 @@ class f_client : public fiber::fiber
       std::cout << "fiber_server: read..." << std::endl;
       while ( ! this->read( buf, read_bytes, sw ) )
       {
+				yield();
       }
       if ( read_bytes == 3 )
       {
