@@ -127,7 +127,7 @@ class f_client : public fiber::fiber
 				socket_write( sndbuf, 1, sa );
 			}
 				//std::cout << "fiber_client: I wrote " << (int)n << " bytes." << std::endl;
-      do_close( sa );
+      this->do_close( sa );
     }
 
 	private:

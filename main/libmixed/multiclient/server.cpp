@@ -137,7 +137,7 @@ class f_client : public fiber::fiber
 			{
 				std::remove_if( listeners.begin(), listeners.end(), is_finished );
 			}
-			while ( listeners.size() == s-1 )
+			while ( listeners.size() > 0  )
 				;
 			::shutdown( sa, SHUT_RDWR );
       //::close( sa );
