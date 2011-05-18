@@ -5,6 +5,16 @@
 
 using namespace scheduler;
 
+class fu : public fiber::fiber
+{
+	public:
+		virtual void go()
+		{
+			yield();
+			std::cout << "fu: OK." << std::endl;
+		}
+};
+
 class forked : public fiber::fiber
 {
 	public:
@@ -20,23 +30,26 @@ class forked : public fiber::fiber
 			{
 				yield();
 			}
-			//std::cout << "Fiber: OK." << std::endl;
+			fiber::fiber::ptr fp = new fu();
+			_supervisor->spawn( fp );
+			std::cout << "forked: OK." << std::endl;
 			ended = true;
 		}
 };
 
 int main(int,char**)
 {
-	int thread_count = 1000;
+	int thread_count = 10;
 	scheduler::ueber_scheduler us;
 	us.init();
+	forked fs;
+	us.spawn( &fs );
   /*
 	std::cout 
 		<< "Thread count: " << thread_count
 		<< std::endl
 		<< "Init: OK."
 		<< std::endl;
-  */
 
 	forked fs[thread_count];
 	int i;
@@ -44,13 +57,11 @@ int main(int,char**)
 	{
 	us.spawn(&fs[i]);
 	}
-  /*
-	std::cout << "Spawn: OK." << std::endl;
   */
+	std::cout << "Spawn: OK." << std::endl;
+  
 
 	us.join_u_sch();
-  /*
 	std::cout << "End: OK." << std::endl;
-  */
 	return 0;
 }

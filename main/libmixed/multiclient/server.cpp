@@ -26,21 +26,34 @@ const int default_port = 8100;
 
 void s_err( int num, string& s );
 
-bool is_finished( fiber::fiber::ptr f )
+void waitfor( fiber::fiber::ptr f )
 {
-	bool rv = f->state.get() == libcoro::state_controller::FINISHED;
-	if ( rv )
+	if ( f != 0 )
 	{
-		std::cout << "listener finished working." << std::endl;
+		f->wait();
 	}
-	return rv;
 }
+
+struct fl_starter_pack
+{
+	typedef fl_starter_pack* ptr;
+	int fd;
+	fiber::fiber::ptr parent;
+};
 
 class f_listener : public fiber::fiber
 {
 	public:
-		f_listener( int fd_ )
+		f_listener( void* data )
+		{
+			fl_starter_pack::ptr pack = static_cast< fl_starter_pack::ptr >( data );
+			fd = pack->fd;
+			parent = pack->parent;
+		}
+
+		f_listener( int fd_, fiber::fiber::ptr parent_ )
 		: fd ( fd_ )
+		, parent( parent_ )
 		{}
 
 		virtual void go()
@@ -50,7 +63,6 @@ class f_listener : public fiber::fiber
       char buf[12];
       ssize_t read_bytes = 12;
 
-      //std::cout << "fiber_server: read..." << std::endl;
       while ( ! this->read( buf, read_bytes, fd ) )
       {
 				yield();
@@ -60,7 +72,6 @@ class f_listener : public fiber::fiber
 			sstr << string(buf).substr(6,12);
 			int bytes = 0;
 			sstr >> bytes;
-			//std::cout << "fiber_server: " << bytes << " bytes to read" << std::endl;
 
 			char sndbuf[1];
 			char recbuf[1];
@@ -75,6 +86,21 @@ class f_listener : public fiber::fiber
 					break;
 				}
 			}
+			scheduler::spawned_data message;
+			message.d = scheduler::FIBER_SPECIFIC;
+			message.p = 0;
+			message.sender = this;
+			message.receiver = parent;
+			while ( !send( message ) )
+			{
+				yield();
+			}
+			while ( !receive( message ) )
+			{
+				yield();
+			}
+			std::cout << "Server listener: end." << std::endl;
+
       do_close( fd );
 		}
 
@@ -97,7 +123,13 @@ class f_listener : public fiber::fiber
 
 	private:
 		int fd;
+		fiber::fiber::ptr parent;
 };
+
+static fiber::fiber::ptr get_listener( void* p )
+{
+	return new f_listener( p );
+}
 
 class f_client : public fiber::fiber
 {
@@ -109,13 +141,15 @@ class f_client : public fiber::fiber
     virtual void go()
     {
 
+			int max_opened = 20;
 			int sa = init_socket();
 			if ( sa < 0 )
 			{
 				return;
 			}
 
-			for ( int opened_sockets = 0; opened_sockets < 2; opened_sockets++ )
+			int opened_sockets;
+			for ( opened_sockets = 0; opened_sockets < max_opened;  )
 			{
 				int sw = wait_for_connection( sa );
 
@@ -126,29 +160,53 @@ class f_client : public fiber::fiber
 					std::cout << "poller_client: connect() error: " << error_name << std::endl;
 					//return;
 				}
-				else
+				else if ( std::find( connections.begin(), connections.end(), sw ) == connections.end() )
 				{
 					create_listener( sw );
+					opened_sockets++;
 				}
 			}
 
-			int s = listeners.size();
-			do
-			{
-				std::remove_if( listeners.begin(), listeners.end(), is_finished );
-			}
-			while ( listeners.size() > 0  )
-				;
-			::shutdown( sa, SHUT_RDWR );
+			//std::cout << "opened_sockets (out of loop): " << opened_sockets << std::endl;
+			//std::for_each ( listeners.begin(), listeners.end(), &waitfor );
+			wait_for_listeners( max_opened );
+			_supervisor->close( sa );;
       //::close( sa );
-			//std::cout << "Server: exiting. " << s << std::endl;
+			std::cout << "Server: exiting. " << std::endl;
     }
 
 	private:
+		void wait_for_listeners( int how_many )
+		{
+			scheduler::spawned_data message;
+			int responses = 0;
+
+			while ( responses < how_many )
+			{
+				while ( !receive( message ) )
+				{
+					yield();
+				}
+				responses++;
+			}
+			for ( int listeners = 0; listeners < how_many; listeners++ )
+			{
+				message.d = scheduler::FIBER_SPECIFIC;
+				message.p = 0;
+				message.receiver = message.sender;
+				message.sender = this;
+				while ( !send( message ) )
+				{
+					yield();
+				}
+			}
+		}
+
 		void create_listener( int listen_descriptor )
 		{
-			f_listener* l = new f_listener( listen_descriptor );
-			create_fiber( l );
+			yield();
+			f_listener* l = new f_listener( listen_descriptor, this );
+			spawn( l );
 			listeners.push_back( l );
 		}
 
@@ -180,23 +238,23 @@ class f_client : public fiber::fiber
         std::cout << "fiber_server: bind() error: " << error_name << std::endl;
         return -1;
       }
+			_supervisor->init_server( sa );
 			return sa;
 		}
 
 		int wait_for_connection( int sa )
 		{
-			int sw;
+			int sw = 0;
 
-      ::sockaddr_in sw_in;
-      ::socklen_t sw_len = (::socklen_t) sizeof(::sockaddr_in);
-      do
-      {
-        sw = ::accept( sa, (sockaddr*) &sw_in, &sw_len );
+			scheduler::accept_connect_data data;
+			data.fd = sa;
+      while ( !this->accept( sa, data ) )
+			{
 				yield();
-      }
-      while ( sw <= 0  && errno == EAGAIN )
         ;
-			return sw;
+			}
+			std::cout << "sa: " << sa << "sw: " << data.fd << std::endl;
+			return data.fd;
 		}
 
   private:

@@ -23,3 +23,8 @@ add_executable ( poller_client poller_client.cpp )
 target_link_libraries ( poller_client pthread )
 target_link_libraries ( poller_client libmixed )
 
+add_executable ( spawntest spawntest.cpp )
+
+target_link_libraries ( spawntest pthread )
+target_link_libraries ( spawntest libmixed )
+
