@@ -91,6 +91,7 @@ class f_listener : public fiber::fiber
 			message.p = 0;
 			message.sender = this;
 			message.receiver = parent;
+      /*
 			while ( !send( message ) )
 			{
 				yield();
@@ -99,6 +100,7 @@ class f_listener : public fiber::fiber
 			{
 				yield();
 			}
+      */
 			std::cout << "Server listener: end." << std::endl;
 
       do_close( fd );
@@ -141,7 +143,7 @@ class f_client : public fiber::fiber
     virtual void go()
     {
 
-			int max_opened = 20;
+			int max_opened = 1024;
 			int sa = init_socket();
 			if ( sa < 0 )
 			{
@@ -169,8 +171,8 @@ class f_client : public fiber::fiber
 
 			//std::cout << "opened_sockets (out of loop): " << opened_sockets << std::endl;
 			//std::for_each ( listeners.begin(), listeners.end(), &waitfor );
-			wait_for_listeners( max_opened );
-			_supervisor->close( sa );;
+			//wait_for_listeners( max_opened );
+			do_close( sa );;
       //::close( sa );
 			std::cout << "Server: exiting. " << std::endl;
     }
