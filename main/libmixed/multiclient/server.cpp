@@ -76,32 +76,30 @@ class f_listener : public fiber::fiber
 			char sndbuf[1];
 			char recbuf[1];
 			sndbuf[0] = 42;
-			for ( int i = 0; i < bytes; i++ )
-			{
-				socket_write( sndbuf, 1 );
-				socket_read( recbuf, 1 );
-				if ( sndbuf[0] != recbuf[0] )
-				{
-					std::cout << "Server listener: Client response incorrect." << std::endl;
-					break;
-				}
-			}
-			scheduler::spawned_data message;
-			message.d = scheduler::FIBER_SPECIFIC;
-			message.p = 0;
-			message.sender = this;
-			message.receiver = parent;
-      /*
-			while ( !send( message ) )
-			{
-				yield();
-			}
-			while ( !receive( message ) )
-			{
-				yield();
-			}
-      */
-			std::cout << "Server listener: end." << std::endl;
+
+//			std::cout << "Server listener: Beginning of communication with client." << std::endl;
+      try
+      {
+        for ( int i = 0; i < bytes; i++ )
+        {
+          socket_write( sndbuf, 1 );
+          socket_read( recbuf, 1 );
+          if ( sndbuf[0] != recbuf[0] )
+          {
+            std::cout << "Server listener: Client response incorrect." << std::endl;
+            break;
+          }
+          else
+          {
+            //          std::cout << "."; std::cout.flush();
+          }
+        }
+      }
+      catch (std::exception)
+      {
+        //std::cout << "listener: exception caught (probably EOF)" << std::endl;
+      }
+			//std::cout << "Server listener: end." << std::endl;
 
       do_close( fd );
 		}
@@ -143,7 +141,7 @@ class f_client : public fiber::fiber
     virtual void go()
     {
 
-			int max_opened = 1024;
+			int max_opened = 500;
 			int sa = init_socket();
 			if ( sa < 0 )
 			{
@@ -255,7 +253,7 @@ class f_client : public fiber::fiber
 				yield();
         ;
 			}
-			std::cout << "sa: " << sa << "sw: " << data.fd << std::endl;
+			//std::cout << "sa: " << sa << "sw: " << data.fd << std::endl;
 			return data.fd;
 		}
 

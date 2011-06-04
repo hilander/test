@@ -2,6 +2,7 @@ set ( SUBDIRECTORIES
       performance
       unit
 			main/libmixed/multiclient
+			main/pthread/multiclient
     )
 
 foreach ( DIR ${SUBDIRECTORIES} )

@@ -93,9 +93,10 @@ void s_err( int num, string& s )
 class f_client : public fiber::fiber
 {
   public:
-    f_client( char* address_c_str, int port )
+    f_client( char* address_c_str, int port, int num )
       : _addr( address_c_str )
 			, _port( port )
+      , _num ( num )
     {}
 
     virtual void go()
@@ -107,7 +108,7 @@ class f_client : public fiber::fiber
 				return;
 			}
 			
-			int n = 300;
+			int n = 3;
       char num[6];
 			sprintf( num, "%6d", n );
 			string buf( string( "HELLO:" ) + string( num ) );
@@ -163,17 +164,17 @@ class f_client : public fiber::fiber
       
       do
       {
-				yield();
+				//yield();
         sw = ::connect( sa, (const sockaddr*)&sar, sizeof(sar) );
       }
-      while ( sw != 0 && ( errno == EINPROGRESS || errno == EALREADY ) )
+      while ( sw != 0 && ( errno == EINPROGRESS || errno == EACCES || errno == EALREADY ) )
         ;
 
       if ( sw != 0 )
       {
         string error_name;
         s_err( errno, error_name );
-        std::cout << "poller_client: connect() error: " << error_name << std::endl;
+        std::cout << "poller_client(" << _num << "): connect() error: " << error_name << std::endl;
         return -1;
       }
       else
@@ -193,7 +194,7 @@ class f_client : public fiber::fiber
       }
       if ( written_bytes == size )
       {
-        std::cout << "fiber_client: write ok" << std::endl;
+        //std::cout << "fiber_client: write ok" << std::endl;
       }
 			return written_bytes;
       //std::cout << "fiber_client: connect " << ( sa ? "ok." : "fail." ) << std::endl;
@@ -202,6 +203,7 @@ class f_client : public fiber::fiber
   private:
     char* _addr;
 		int _port;
+    int _num;
 };
 
 int main(int argc ,char* argv[])
@@ -224,8 +226,11 @@ int main(int argc ,char* argv[])
 	int port;
 	sstr >> port;
 
-  f_client fcl = f_client( argv[1], port );
-  us.spawn( &fcl );
+  for ( int curr_fiber = 0; curr_fiber < 500; curr_fiber++ )
+  {
+    //f_client fcl = f_client( argv[1], port );
+    us.spawn( new f_client( argv[1], port, curr_fiber+1 )/*&fcl*/ );
+  }
   us.join_u_sch();
 
   return 0;
