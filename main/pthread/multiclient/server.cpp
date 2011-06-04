@@ -76,16 +76,27 @@ class f_listener : public abs_listener
 	private:
 		void socket_read( char* buf, ssize_t bytes )
 		{
+      ::read( fd, buf, bytes );
       // use ::read()
 		}
 
 		void socket_write( char* buf, ssize_t bytes )
 		{
+      ::write( fd, buf, bytes );
       // use ::write()
 		}
 
 	private:
 		int fd;
+};
+
+class wait_for_end
+{
+  public:
+  void operator() ( ::pthread_t* p )
+  {
+    ::pthread_join( *p, 0 );
+  }
 };
 
 class f_client : public abs_listener
@@ -124,6 +135,8 @@ class f_client : public abs_listener
 				}
 			}
 
+      wait_for_end we;
+      std::for_each( listeners.begin(), listeners.end(), we );
 			::close( sa );;
 			std::cout << "Server: exiting. " << std::endl;
     }
@@ -135,7 +148,7 @@ class f_client : public abs_listener
 			f_listener* l = new f_listener( listen_descriptor );
       ::pthread_t* tp = new ::pthread_t();
       ::pthread_attr_t attrs;
-      pthread_create( tp, &attrs, unified_starter, static_cast< void* >( l ) );
+      pthread_create( tp, 0, unified_starter, static_cast< void* >( l ) );
 			listeners.push_back( tp );
 		}
 
@@ -149,8 +162,8 @@ class f_client : public abs_listener
       sar.sin_port = htons( default_port );
 
       int sa = socket( AF_INET, SOCK_STREAM, pe->p_proto );
-      int orig_flags = fcntl( sa, F_GETFL );
-      fcntl( sa, F_SETFL, orig_flags | O_NONBLOCK );
+      //int orig_flags = fcntl( sa, F_GETFL );
+      //fcntl( sa, F_SETFL, orig_flags | O_NONBLOCK );
 
       if ( bind( sa, (sockaddr*)&sar, sizeof(sockaddr_in) ) != 0 )
       {
@@ -174,7 +187,7 @@ class f_client : public abs_listener
 		{
       ::sockaddr_in sd;
       ::socklen_t sl = sizeof( ::sockaddr_in );
-      return ::connect( sa, ( ::sockaddr* )&sd, sl );
+      return ::accept( sa, ( ::sockaddr* )&sd, &sl );
 		}
 
   private:
@@ -257,6 +270,35 @@ int main(int argc ,char* argv[])
   f_client fcl = f_client( ( argc == 2 ) ? argv[1] : loopback );
   ::pthread_t* main_thread = new ::pthread_t();
   ::pthread_attr_t attrs;
+  int m_val = ::pthread_create( main_thread, 0, &unified_starter, &fcl );
+
+  if ( m_val == 0 )
+  {
+    ::pthread_join( *main_thread, 0 );
+  }
+  else
+  {
+    std::cout << "Error during initialization of main thread:" << std::endl;
+    switch ( m_val )
+    {
+      case EINVAL:
+        std::cout << "got EINVAL" << std::endl;
+        break;
+
+      case EPERM:
+        std::cout << "got EPERM" << std::endl;
+        break;
+
+      case EAGAIN:
+        std::cout << "got EAGAIN" << std::endl;
+        break;
+
+      default:
+        std::cout << "got sth" << std::endl;
+        break;
+
+    }
+  }
 
   return 0;
 }

@@ -226,7 +226,7 @@ int main(int argc ,char* argv[])
 	int port;
 	sstr >> port;
 
-  for ( int curr_fiber = 0; curr_fiber < 500; curr_fiber++ )
+  for ( int curr_fiber = 0; curr_fiber < 100; curr_fiber++ )
   {
     //f_client fcl = f_client( argv[1], port );
     us.spawn( new f_client( argv[1], port, curr_fiber+1 )/*&fcl*/ );
