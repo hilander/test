@@ -70,19 +70,41 @@ class f_listener : public abs_listener
 			}
 			std::cout << "Server listener: end." << std::endl;
 
-      ::close( fd );
+      ::shutdown( fd, SHUT_RDWR );
 		}
 
 	private:
 		void socket_read( char* buf, ssize_t bytes )
 		{
-      ::read( fd, buf, bytes );
+			ssize_t r;
+			do
+			{
+				r = ::read( fd, buf, bytes );
+				if ( r == 0 )
+				{
+					std::cout << "Unexpected EOF." << std::endl;
+					break;
+				}
+			}
+			while ( r == -1 && errno == EAGAIN )
+				;
       // use ::read()
 		}
 
 		void socket_write( char* buf, ssize_t bytes )
 		{
-      ::write( fd, buf, bytes );
+			ssize_t r;
+			do
+			{
+				r = ::write( fd, buf, bytes );
+				if ( r == 0 )
+				{
+					std::cout << "Unexpected EOF." << std::endl;
+					break;
+				}
+			}
+			while ( r == -1 && errno == EAGAIN )
+				;
       // use ::write()
 		}
 
@@ -109,7 +131,7 @@ class f_client : public abs_listener
     virtual void go()
     {
 
-			int max_opened = 100;
+			int max_opened = 1000;
 			int sa = init_socket();
 			if ( sa < 0 )
 			{
@@ -137,7 +159,7 @@ class f_client : public abs_listener
 
       wait_for_end we;
       std::for_each( listeners.begin(), listeners.end(), we );
-			::close( sa );;
+			::shutdown( sa, SHUT_RDWR );;
 			std::cout << "Server: exiting. " << std::endl;
     }
 
@@ -279,7 +301,7 @@ int main(int argc ,char* argv[])
   else
   {
     std::cout << "Error during initialization of main thread:" << std::endl;
-    switch ( m_val )
+    switch ( errno )
     {
       case EINVAL:
         std::cout << "got EINVAL" << std::endl;

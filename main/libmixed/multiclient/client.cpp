@@ -127,8 +127,8 @@ class f_client : public fiber::fiber
 				sndbuf[0] = recbuf[0];
 				socket_write( sndbuf, 1, sa );
 			}
-				//std::cout << "fiber_client: I wrote " << (int)n << " bytes." << std::endl;
       this->do_close( sa );
+			std::cout << "fiber_client(" << _num << "): I wrote " << (int)n << " bytes." << std::endl;
     }
 
 	private:
@@ -137,7 +137,7 @@ class f_client : public fiber::fiber
 		{
       while ( ! this->read( buf, bytes, fd ) )
       {
-				yield();
+				//yield();
       }
 		}
 
@@ -145,7 +145,7 @@ class f_client : public fiber::fiber
 		{
       while ( ! this->write( buf, bytes, fd ) )
       {
-				yield();
+				//yield();
       }
 		}
 
@@ -164,7 +164,6 @@ class f_client : public fiber::fiber
       
       do
       {
-				//yield();
         sw = ::connect( sa, (const sockaddr*)&sar, sizeof(sar) );
       }
       while ( sw != 0 && ( errno == EINPROGRESS || errno == EACCES || errno == EALREADY ) )
